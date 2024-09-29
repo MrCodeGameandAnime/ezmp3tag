@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-#
-# This illustrates the call-flow required to complete an OAuth request
-# against the discogs.com API. The script will download and save a single
-# image from the discogs.com API as an example.
-# See README.md for further documentation.
-#
-
-
-
 
 import json
 import sys
@@ -19,7 +9,6 @@ import oauth2 as oauth
 import GatherFileNames
 
 song_name = GatherFileNames.get_file_name()
-
 
 consumer_key = "wutlrVtzfmEhQFSNQJlC"
 consumer_secret = "RojkMIvZhSHjIabnfxyqTnOZAfyNoJbH"
