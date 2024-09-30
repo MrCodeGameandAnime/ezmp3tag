@@ -6,9 +6,7 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(parent_dir)
 import mp3_name
 
-
 song_name = mp3_name.get_first_mp3()
-
 
 def get_with_retries(url, params, retries=3, delay=2):
     """Perform a request with retries in case of a 503 error."""
