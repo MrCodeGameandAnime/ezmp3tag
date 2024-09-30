@@ -9,11 +9,9 @@ import pickle
 
 load_dotenv()
 
-# Load API credentials from environment variables
 consumer_key = os.getenv('CONSUMER_KEY')
 consumer_secret = os.getenv('CONSUMER_SECRET')
 
-# Define OAuth URLs
 request_token_url = "https://api.discogs.com/oauth/request_token"
 authorize_url = "https://www.discogs.com/oauth/authorize"
 access_token_url = "https://api.discogs.com/oauth/access_token"
@@ -117,7 +115,6 @@ def get_discogs_metadata(song_name):
     return search_discogs(access_token, song_name)
 
 if __name__ == "__main__":
-    # Example usage with a hard-coded song name for testing
     song_name = "Your Song Name Here"  # Replace with an actual song name for testing
     discogs_results = get_discogs_metadata(song_name)
     print_discogs_results(discogs_results)

@@ -1,5 +1,4 @@
 import requests
-
 import os
 import pylast
 from dotenv import load_dotenv
@@ -20,8 +19,6 @@ def initialize_lastfm_client():
     return pylast.LastFMNetwork(api_key=LASTFM_API_KEY, api_secret=LASTFM_API_SECRET,
                                 username=LASTFM_USERNAME, password_hash=LASTFM_PASSWORD)
 
-
-# Create a global Last.fm client instance
 lastfm = initialize_lastfm_client()
 
 
