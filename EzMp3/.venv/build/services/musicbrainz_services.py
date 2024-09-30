@@ -7,7 +7,7 @@ sys.path.append(parent_dir)
 import mp3_name
 
 
-song_name = mp3_name.get_file_name()
+song_name = mp3_name.get_first_mp3()
 
 
 def get_with_retries(url, params, retries=3, delay=2):

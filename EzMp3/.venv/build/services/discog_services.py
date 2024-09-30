@@ -1,23 +1,27 @@
-#!/usr/bin/env python
-
 import json
+import os
 import sys
 from urllib import request
 from urllib.parse import parse_qsl
 import oauth2 as oauth
+from dotenv import load_dotenv
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(parent_dir)
+load_dotenv()
 import mp3_name
 
 
-consumer_key = "wutlrVtzfmEhQFSNQJlC"
-consumer_secret = "RojkMIvZhSHjIabnfxyqTnOZAfyNoJbH"
+consumer_key = os.getenv('CONSUMER_KEY')
+consumer_secret = os.getenv('CONSUMER_SECRET')
 
 request_token_url = "https://api.discogs.com/oauth/request_token"
 authorize_url = "https://www.discogs.com/oauth/authorize"
 access_token_url = "https://api.discogs.com/oauth/access_token"
 
 user_agent = "ezmp3/1.0"
-song_name = mp3_name.get_file_name().replace(" ","+")
+song_name = mp3_name.get_first_mp3().replace(" ","+")
 print(song_name)
+song = mp3_name.get_first_mp3()
 
 
 
