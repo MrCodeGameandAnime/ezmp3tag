@@ -50,69 +50,59 @@ def parse_year(year_string):
     except ValueError:
         return None  # Return None if parsing fails
 
-
 def ai_resolve_metadata(mb_metadata, spotify_metadata, deezer_metadata, discogs_metadata, lastfm_tags):
-    """Use AI logic to resolve conflicts and select the best metadata."""
     final_metadata = {}
 
-    # Title: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
-    final_metadata['title'] = spotify_metadata.get('title') if spotify_metadata else (
-        deezer_metadata.get('title') if deezer_metadata else (
-            discogs_metadata.get('title') if discogs_metadata else (
-                mb_metadata.get('title') if mb_metadata else None
-            )
-        )
+    title_candidates = [
+        spotify_metadata.get('title'),
+        deezer_metadata.get('title'),
+        mb_metadata.get('title'),
+        discogs_metadata[0].get('title') if discogs_metadata else None
+    ]
+    title = next((t for t in title_candidates if t), None)
+    if title:
+        title = title.split(' - ')[0]
+        title = title.split('(')[0].strip()
+    final_metadata['title'] = title
+
+    artist_candidates = [
+        spotify_metadata.get('artist'),
+        deezer_metadata.get('album_artist'),
+        mb_metadata.get('artist'),
+        discogs_metadata[0].get('artist')[0] if discogs_metadata and discogs_metadata[0].get('artist') else None
+    ]
+    final_metadata['contributing_artists'] = next((a for a in artist_candidates if a), None)
+
+    final_metadata['album_artist'] = final_metadata['contributing_artists']
+
+    album_candidates = [
+        spotify_metadata.get('album'),
+        deezer_metadata.get('album'),
+        mb_metadata.get('album'),
+        discogs_metadata[0].get('title') if discogs_metadata else None
+    ]
+    album = next((a for a in album_candidates if a), None)
+    if album:
+        album = album.split('(')[0].strip()
+    final_metadata['album'] = album
+
+    year_candidates = [
+        spotify_metadata.get('year'),
+        deezer_metadata.get('year'),
+        mb_metadata.get('year'),
+        discogs_metadata[0].get('year') if discogs_metadata else None
+    ]
+    years = [int(y) for y in year_candidates if y and y.isdigit()]
+    final_metadata['year'] = str(min(years)) if years else None
+
+    final_metadata['genres'] = (
+        spotify_metadata.get('genres') or
+        deezer_metadata.get('genres') or
+        lastfm_tags or
+        []
     )
-
-    # Contributing Artists: Combine unique artists from all sources
-    final_metadata['contributing_artists'] = list(set(
-        (spotify_metadata.get('contributing_artists') if isinstance(spotify_metadata.get('contributing_artists'), list) else []) +
-         (deezer_metadata.get('contributing_artists') if isinstance(deezer_metadata.get('contributing_artists'), list) else []) +
-         (discogs_metadata['artist'] if isinstance(discogs_metadata, dict) and 'artist' in discogs_metadata else discogs_metadata) +  # Handle if 'artist' is a list or single item
-         (mb_metadata.get('contributing_artists') if isinstance(mb_metadata.get('contributing_artists'), list) else [])
-        )
-    )
-
-    # If discogs_metadata['artist'] is a list, flatten it
-    if isinstance(discogs_metadata, list):
-        final_metadata['contributing_artists'].extend(discogs_metadata)
-
-    # Album Artist: Resolve album artist with handling for None values
-    album_artist_spotify = spotify_metadata.get('album_artist', '')
-    album_artist_deezer = deezer_metadata.get('album_artist', '')
-    album_artist_discogs = discogs_metadata.get('album_artist', '') if isinstance(discogs_metadata, dict) else ''
-    album_artist_mb = mb_metadata.get('album_artist', '')
-
-    final_metadata['album_artist'] = max(
-        [album_artist_spotify, album_artist_deezer, album_artist_discogs, album_artist_mb],
-        key=lambda x: (x is not None and x != '', len(x) if x is not None else 0)
-    )
-
-    # Album: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
-    final_metadata['album'] = spotify_metadata.get('album') if spotify_metadata else (
-        deezer_metadata.get('album') if deezer_metadata else (
-            discogs_metadata.get('title') if discogs_metadata else (
-                mb_metadata.get('album') if mb_metadata else None
-            )
-        )
-    )
-
-    # Year: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
-    final_metadata['year'] = spotify_metadata.get('year') if spotify_metadata else (
-        deezer_metadata.get('year') if deezer_metadata else (
-            discogs_metadata.get('year') if discogs_metadata else (
-                mb_metadata.get('year') if mb_metadata else None
-            )
-        )
-    )
-
-    # Genres: Prefer Spotify genres, fallback to Deezer genres, then Last.fm tags if missing
-    final_metadata['genres'] = (spotify_metadata.get('genres') if spotify_metadata and spotify_metadata.get('genres') else
-                                (deezer_metadata.get('genres') if deezer_metadata and deezer_metadata.get('genres') else
-                                 (lastfm_tags if lastfm_tags else [])))
 
     return final_metadata
-
 
 def get_music_metadata(track):
     """Fetch metadata from all sources and combine results with AI."""
@@ -161,3 +151,65 @@ if __name__ == "__main__":
     track_name = "Bohemian Rhapsody"
     metadata = get_music_metadata(track_name)
     print("AI-Resolved Metadata:", metadata)
+
+# def ai_resolve_metadata(mb_metadata, spotify_metadata, deezer_metadata, discogs_metadata, lastfm_tags):
+#     """Use AI logic to resolve conflicts and select the best metadata."""
+#     final_metadata = {}
+#
+#     # Title: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
+#     final_metadata['title'] = spotify_metadata.get('title') if spotify_metadata else (
+#         deezer_metadata.get('title') if deezer_metadata else (
+#             discogs_metadata.get('title') if discogs_metadata else (
+#                 mb_metadata.get('title') if mb_metadata else None
+#             )
+#         )
+#     )
+#
+#     # Contributing Artists: Combine unique artists from all sources
+#     final_metadata['contributing_artists'] = list(set(
+#         (spotify_metadata.get('contributing_artists') if isinstance(spotify_metadata.get('contributing_artists'), list) else []) +
+#          (deezer_metadata.get('contributing_artists') if isinstance(deezer_metadata.get('contributing_artists'), list) else []) +
+#          (discogs_metadata['artist'] if isinstance(discogs_metadata, dict) and 'artist' in discogs_metadata else discogs_metadata) +  # Handle if 'artist' is a list or single item
+#          (mb_metadata.get('contributing_artists') if isinstance(mb_metadata.get('contributing_artists'), list) else [])
+#         )
+#     )
+#
+#     # If discogs_metadata['artist'] is a list, flatten it
+#     if isinstance(discogs_metadata, list):
+#         final_metadata['contributing_artists'].extend(discogs_metadata)
+#
+#     # Album Artist: Resolve album artist with handling for None values
+#     album_artist_spotify = spotify_metadata.get('album_artist', '')
+#     album_artist_deezer = deezer_metadata.get('album_artist', '')
+#     album_artist_discogs = discogs_metadata.get('album_artist', '') if isinstance(discogs_metadata, dict) else ''
+#     album_artist_mb = mb_metadata.get('album_artist', '')
+#
+#     final_metadata['album_artist'] = max(
+#         [album_artist_spotify, album_artist_deezer, album_artist_discogs, album_artist_mb],
+#         key=lambda x: (x is not None and x != '', len(x) if x is not None else 0)
+#     )
+#
+#     # Album: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
+#     final_metadata['album'] = spotify_metadata.get('album') if spotify_metadata else (
+#         deezer_metadata.get('album') if deezer_metadata else (
+#             discogs_metadata.get('title') if discogs_metadata else (
+#                 mb_metadata.get('album') if mb_metadata else None
+#             )
+#         )
+#     )
+#
+#     # Year: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
+#     final_metadata['year'] = spotify_metadata.get('year') if spotify_metadata else (
+#         deezer_metadata.get('year') if deezer_metadata else (
+#             discogs_metadata.get('year') if discogs_metadata else (
+#                 mb_metadata.get('year') if mb_metadata else None
+#             )
+#         )
+#     )
+#
+#     # Genres: Prefer Spotify genres, fallback to Deezer genres, then Last.fm tags if missing
+#     final_metadata['genres'] = (spotify_metadata.get('genres') if spotify_metadata and spotify_metadata.get('genres') else
+#                                 (deezer_metadata.get('genres') if deezer_metadata and deezer_metadata.get('genres') else
+#                                  (lastfm_tags if lastfm_tags else [])))
+#
+#     return final_metadata

@@ -1,7 +1,8 @@
-import requests
 import os
 import pylast
+import httpx
 from dotenv import load_dotenv
+from urllib3.util.retry import Retry
 
 load_dotenv()
 
@@ -16,8 +17,28 @@ def initialize_lastfm_client():
     if not LASTFM_API_KEY or not LASTFM_API_SECRET or not LASTFM_USERNAME or not LASTFM_PASSWORD:
         raise ValueError("Missing Last.fm API credentials in environment variables.")
 
-    return pylast.LastFMNetwork(api_key=LASTFM_API_KEY, api_secret=LASTFM_API_SECRET,
-                                username=LASTFM_USERNAME, password_hash=LASTFM_PASSWORD)
+    # Retry logic at the application level using httpx
+    def retry_client():
+        retries = 3  # Retry up to 3 times
+        for attempt in range(retries):
+            try:
+                client = httpx.Client(timeout=10.0, verify=False)  # Disable SSL verification for now
+                return client
+            except httpx.RequestError as e:
+                if attempt < retries - 1:  # Retry until max retries reached
+                    print(f"Retrying... (attempt {attempt + 1})")
+                else:
+                    raise e
+
+    client = retry_client()  # Create an HTTPX client with retry logic
+
+    return pylast.LastFMNetwork(
+        api_key=LASTFM_API_KEY,
+        api_secret=LASTFM_API_SECRET,
+        username=LASTFM_USERNAME,
+        password_hash=LASTFM_PASSWORD
+    )
+
 
 lastfm = initialize_lastfm_client()
 
@@ -29,6 +50,154 @@ def fetch_lastfm_tags(track, artist):
         track_obj = lastfm.get_track(artist, track)
         tags = track_obj.get_top_tags(limit=5)  # Fetch top 5 tags
         return [tag.item.name for tag in tags]  # Return list of tag names
+    except pylast.NetworkError as e:
+        print(f"Network error: {e}")
+    except pylast.WSError as e:
+        print(f"Last.fm API error: {e}")
     except Exception as e:
-        print(f"Last.fm error: {e}")
+        print(f"Unexpected error: {e}")
     return []
+
+# def initialize_lastfm_client():
+#     if not LASTFM_API_KEY or not LASTFM_API_SECRET or not LASTFM_USERNAME or not LASTFM_PASSWORD:
+#         raise ValueError("Missing Last.fm API credentials in environment variables.")
+#
+#     # Adding retry logic to handle connection issues
+#     retry_strategy = Retry(
+#         total=3,  # Retry up to 3 times
+#         backoff_factor=1,  # Wait between retries
+#         status_forcelist=[500, 502, 503, 504],  # Retry on these HTTP status codes
+#         method_whitelist=["HEAD", "GET", "OPTIONS"]  # Allow retries on specific HTTP methods
+#     )
+#
+#     adapter = HTTPAdapter(max_retries=retry_strategy)
+#
+#     # Custom client that can bypass SSL for debugging and retries for connection issues
+#     client = httpx.Client(verify=False)
+#     session = client._transport._pool
+#     session.mount("https://", adapter)
+#     session.mount("http://", adapter)
+#
+#     return pylast.LastFMNetwork(
+#         api_key=LASTFM_API_KEY,
+#         api_secret=LASTFM_API_SECRET,
+#         username=LASTFM_USERNAME,
+#         password_hash=LASTFM_PASSWORD,
+#         client=client
+#     )
+#
+#
+# lastfm = initialize_lastfm_client()
+#
+#
+# def fetch_lastfm_tags(track, artist):
+#     """Fetch tags from Last.fm."""
+#     try:
+#         # Use the Last.fm client to get track information
+#         track_obj = lastfm.get_track(artist, track)
+#         tags = track_obj.get_top_tags(limit=5)  # Fetch top 5 tags
+#         return [tag.item.name for tag in tags]  # Return list of tag names
+#     except pylast.NetworkError as e:
+#         print(f"Network error: {e}")
+#     except pylast.WSError as e:
+#         print(f"Last.fm API error: {e}")
+#     except Exception as e:
+#         print(f"Unexpected error: {e}")
+#     return []
+
+
+# def initialize_lastfm_client():
+#     if not LASTFM_API_KEY or not LASTFM_API_SECRET or not LASTFM_USERNAME or not LASTFM_PASSWORD:
+#         raise ValueError("Missing Last.fm API credentials in environment variables.")
+#
+#     # Adding retry logic to handle connection issues
+#     retry_strategy = Retry(
+#         total=3,  # Retry up to 3 times
+#         backoff_factor=1,  # Wait between retries
+#         status_forcelist=[500, 502, 503, 504],  # Retry on these HTTP status codes
+#         method_whitelist=["HEAD", "GET", "OPTIONS"]  # Allow retries on specific HTTP methods
+#     )
+#
+#     adapter = HTTPAdapter(max_retries=retry_strategy)
+#
+#     # Custom client that can bypass SSL for debugging and retries for connection issues
+#     client = httpx.Client(verify=False)
+#     session = client._transport._pool
+#     session.mount("https://", adapter)
+#     session.mount("http://", adapter)
+#
+#     return pylast.LastFMNetwork(
+#         api_key=LASTFM_API_KEY,
+#         api_secret=LASTFM_API_SECRET,
+#         username=LASTFM_USERNAME,
+#         password_hash=LASTFM_PASSWORD,
+#         client=client
+#     )
+#
+#
+# lastfm = initialize_lastfm_client()
+#
+#
+# def fetch_lastfm_tags(track, artist):
+#     """Fetch tags from Last.fm."""
+#     try:
+#         # Use the Last.fm client to get track information
+#         track_obj = lastfm.get_track(artist, track)
+#         tags = track_obj.get_top_tags(limit=5)  # Fetch top 5 tags
+#         return [tag.item.name for tag in tags]  # Return list of tag names
+#     except pylast.NetworkError as e:
+#         print(f"Network error: {e}")
+#     except pylast.WSError as e:
+#         print(f"Last.fm API error: {e}")
+#     except Exception as e:
+#         print(f"Unexpected error: {e}")
+#     return []
+
+
+
+# def initialize_lastfm_client():
+#     if not LASTFM_API_KEY or not LASTFM_API_SECRET or not LASTFM_USERNAME or not LASTFM_PASSWORD:
+#         raise ValueError("Missing Last.fm API credentials in environment variables.")
+#
+#     # Updated retry logic
+#     retry_strategy = Retry(
+#         total=3,  # Retry up to 3 times
+#         backoff_factor=1,  # Wait between retries
+#         status_forcelist=[500, 502, 503, 504],  # Retry on these HTTP status codes
+#         allowed_methods=["HEAD", "GET", "OPTIONS"]  # Updated from method_whitelist to allowed_methods
+#     )
+#
+#     adapter = HTTPAdapter(max_retries=retry_strategy)
+#
+#     # Custom client that can bypass SSL for debugging and retries for connection issues
+#     client = httpx.Client(verify=False)
+#     session = client._transport._pool
+#     session.mount("https://", adapter)
+#     session.mount("http://", adapter)
+#
+#     return pylast.LastFMNetwork(
+#         api_key=LASTFM_API_KEY,
+#         api_secret=LASTFM_API_SECRET,
+#         username=LASTFM_USERNAME,
+#         password_hash=LASTFM_PASSWORD,
+#         client=client
+#     )
+#
+#
+# lastfm = initialize_lastfm_client()
+#
+#
+# def fetch_lastfm_tags(track, artist):
+#     """Fetch tags from Last.fm."""
+#     try:
+#         # Use the Last.fm client to get track information
+#         track_obj = lastfm.get_track(artist, track)
+#         tags = track_obj.get_top_tags(limit=5)  # Fetch top 5 tags
+#         return [tag.item.name for tag in tags]  # Return list of tag names
+#     except pylast.NetworkError as e:
+#         print(f"Network error: {e}")
+#     except pylast.WSError as e:
+#         print(f"Last.fm API error: {e}")
+#     except Exception as e:
+#         print(f"Unexpected error: {e}")
+#     return []
