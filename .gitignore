@@ -1,0 +1,17 @@
+/EzMp3/.venv/Scripts/
+/EzMp3/.venv/Lib/
+/EzMp3/.venv/share/
+/EzMp3/.idea/
+/.idea
+/EzMp3/.venv/build/__pycache__
+/EzMp3/.venv/build/music_dir/gonna fly now.mp3
+/EzMp3/.venv/build/services/.env
+/EzMp3/.venv/build/.env
+/EzMp3/.idea/inspectionProfiles
+/EzMp3/.idea/inspectionProfiles/profiles_settings.xml
+/EzMp3/.idea/misc.xml
+/EzMp3/.idea/vcs.xml
+/EzMp3/.idea/workspace.xml
+/EzMp3/.venv/build/services/discogs_token.pkl
+/EzMp3/.venv/build/services/.cache
+/.idea/
