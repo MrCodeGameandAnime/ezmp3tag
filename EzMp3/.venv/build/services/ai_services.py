@@ -9,7 +9,7 @@ from datetime import datetime
 import os
 import requests
 import musicbrainzngs
-
+import json
 
 load_dotenv()
 
@@ -104,6 +104,35 @@ def ai_resolve_metadata(mb_metadata, spotify_metadata, deezer_metadata, discogs_
 
     return final_metadata
 
+
+def export_raw_and_resolved_metadata_to_json(spotify_metadata, mb_metadata, deezer_metadata, discogs_metadata,
+                                             lastfm_tags, resolved_metadata, track_name):
+    """Export the raw metadata from all sources and the resolved metadata to a JSON file."""
+    # Define the filename, using the track name and current timestamp to avoid overwriting
+    filename = f"{track_name.replace(' ', '_').lower()}_metadata_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
+    # Path to save the file
+    output_dir = "metadata_exports"
+    os.makedirs(output_dir, exist_ok=True)  # Ensure directory exists
+
+    # Organize the metadata into a dictionary
+    metadata_export = {
+        "spotify_metadata": spotify_metadata,
+        "musicbrainz_metadata": mb_metadata,
+        "deezer_metadata": deezer_metadata,
+        "discogs_metadata": discogs_metadata,
+        "lastfm_tags": lastfm_tags,
+        "resolved_metadata": resolved_metadata  # The final metadata resolved by AI
+    }
+
+    # Write the metadata to a file
+    filepath = os.path.join(output_dir, filename)
+    with open(filepath, 'w') as json_file:
+        json.dump(metadata_export, json_file, indent=4)
+
+    print(f"Raw and resolved metadata for '{track_name}' has been exported to {filepath}")
+
+
 def get_music_metadata(track):
     """Fetch metadata from all sources and combine results with AI."""
     print(f"Fetching metadata for the song: {track}...")
@@ -136,15 +165,20 @@ def get_music_metadata(track):
     # Get the artist from one of the results (if possible) to improve Last.fm search
     artist = (spotify_metadata['artist'] if spotify_metadata else
               (deezer_metadata['album_artist'] if deezer_metadata else
-               (discogs_metadata['album_artist'] if discogs_metadata else
+               (discogs_metadata[0]['artist'] if discogs_metadata and discogs_metadata[0].get('artist') else
                 (mb_metadata['artist'] if mb_metadata else None))))
 
     lastfm_tags = fetch_lastfm_tags(track, artist)
 
     # Combine metadata using AI decision making
-    metadata = ai_resolve_metadata(mb_metadata, spotify_metadata, deezer_metadata, discogs_metadata, lastfm_tags)
+    resolved_metadata = ai_resolve_metadata(mb_metadata, spotify_metadata, deezer_metadata, discogs_metadata,
+                                            lastfm_tags)
 
-    return metadata
+    # Export both raw and resolved metadata to a JSON file after completion
+    export_raw_and_resolved_metadata_to_json(spotify_metadata, mb_metadata, deezer_metadata, discogs_metadata,
+                                             lastfm_tags, resolved_metadata, track)
+
+    return resolved_metadata
 
 
 if __name__ == "__main__":
@@ -152,64 +186,3 @@ if __name__ == "__main__":
     metadata = get_music_metadata(track_name)
     print("AI-Resolved Metadata:", metadata)
 
-# def ai_resolve_metadata(mb_metadata, spotify_metadata, deezer_metadata, discogs_metadata, lastfm_tags):
-#     """Use AI logic to resolve conflicts and select the best metadata."""
-#     final_metadata = {}
-#
-#     # Title: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
-#     final_metadata['title'] = spotify_metadata.get('title') if spotify_metadata else (
-#         deezer_metadata.get('title') if deezer_metadata else (
-#             discogs_metadata.get('title') if discogs_metadata else (
-#                 mb_metadata.get('title') if mb_metadata else None
-#             )
-#         )
-#     )
-#
-#     # Contributing Artists: Combine unique artists from all sources
-#     final_metadata['contributing_artists'] = list(set(
-#         (spotify_metadata.get('contributing_artists') if isinstance(spotify_metadata.get('contributing_artists'), list) else []) +
-#          (deezer_metadata.get('contributing_artists') if isinstance(deezer_metadata.get('contributing_artists'), list) else []) +
-#          (discogs_metadata['artist'] if isinstance(discogs_metadata, dict) and 'artist' in discogs_metadata else discogs_metadata) +  # Handle if 'artist' is a list or single item
-#          (mb_metadata.get('contributing_artists') if isinstance(mb_metadata.get('contributing_artists'), list) else [])
-#         )
-#     )
-#
-#     # If discogs_metadata['artist'] is a list, flatten it
-#     if isinstance(discogs_metadata, list):
-#         final_metadata['contributing_artists'].extend(discogs_metadata)
-#
-#     # Album Artist: Resolve album artist with handling for None values
-#     album_artist_spotify = spotify_metadata.get('album_artist', '')
-#     album_artist_deezer = deezer_metadata.get('album_artist', '')
-#     album_artist_discogs = discogs_metadata.get('album_artist', '') if isinstance(discogs_metadata, dict) else ''
-#     album_artist_mb = mb_metadata.get('album_artist', '')
-#
-#     final_metadata['album_artist'] = max(
-#         [album_artist_spotify, album_artist_deezer, album_artist_discogs, album_artist_mb],
-#         key=lambda x: (x is not None and x != '', len(x) if x is not None else 0)
-#     )
-#
-#     # Album: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
-#     final_metadata['album'] = spotify_metadata.get('album') if spotify_metadata else (
-#         deezer_metadata.get('album') if deezer_metadata else (
-#             discogs_metadata.get('title') if discogs_metadata else (
-#                 mb_metadata.get('album') if mb_metadata else None
-#             )
-#         )
-#     )
-#
-#     # Year: Prefer Spotify, then Deezer, then Discogs, then MusicBrainz
-#     final_metadata['year'] = spotify_metadata.get('year') if spotify_metadata else (
-#         deezer_metadata.get('year') if deezer_metadata else (
-#             discogs_metadata.get('year') if discogs_metadata else (
-#                 mb_metadata.get('year') if mb_metadata else None
-#             )
-#         )
-#     )
-#
-#     # Genres: Prefer Spotify genres, fallback to Deezer genres, then Last.fm tags if missing
-#     final_metadata['genres'] = (spotify_metadata.get('genres') if spotify_metadata and spotify_metadata.get('genres') else
-#                                 (deezer_metadata.get('genres') if deezer_metadata and deezer_metadata.get('genres') else
-#                                  (lastfm_tags if lastfm_tags else [])))
-#
-#     return final_metadata
