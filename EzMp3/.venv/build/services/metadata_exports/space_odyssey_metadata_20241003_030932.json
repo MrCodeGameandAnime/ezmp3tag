@@ -1,0 +1,47 @@
+{
+    "spotify_metadata": {
+        "title": "Space Station Docking - From \"2001: A Space Odyssey\"",
+        "artist": "Alex North",
+        "contributing_artists": [
+            "Alex North"
+        ],
+        "album": "2001 (World Premiere Recording)",
+        "album_artist": "Alex North",
+        "year": "1993",
+        "popularity": 22,
+        "genres": [
+            "classic soundtrack"
+        ]
+    },
+    "musicbrainz_metadata": {
+        "title": "Space Odyssey",
+        "artist": "Kim Fowley",
+        "album": "Born to Be Wild",
+        "album_artist": "Kim Fowley",
+        "year": "1968"
+    },
+    "deezer_metadata": {
+        "title": "Friends of Mine (Mono Version)",
+        "contributing_artists": [
+            "The Zombies"
+        ],
+        "album_artist": "The Zombies",
+        "album": "Odessey and Oracle",
+        "year": "1968",
+        "genres": [
+            "Rock"
+        ]
+    },
+    "discogs_metadata": [],
+    "lastfm_tags": [],
+    "resolved_metadata": {
+        "title": "Space Station Docking",
+        "contributing_artists": "Alex North",
+        "album_artist": "Alex North",
+        "album": "2001",
+        "year": "1968",
+        "genres": [
+            "classic soundtrack"
+        ]
+    }
+}

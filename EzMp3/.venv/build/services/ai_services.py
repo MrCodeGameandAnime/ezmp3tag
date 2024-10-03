@@ -182,7 +182,7 @@ def get_music_metadata(track):
 
 
 if __name__ == "__main__":
-    track_name = "Bohemian Rhapsody"
+    track_name = "space odyssey"
     metadata = get_music_metadata(track_name)
     print("AI-Resolved Metadata:", metadata)
 
