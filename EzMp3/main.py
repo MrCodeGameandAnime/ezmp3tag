@@ -1,20 +1,12 @@
-from flask import Flask, render_template
-import os
-from app.api.api_routes import api
+from flask import render_template
+from app import create_app
 from dotenv import load_dotenv
 
+# Load environment variables from the .env file
 load_dotenv()
-app = Flask(__name__, template_folder='app/templates')
-app.register_blueprint(api, url_prefix='/api')  # Prefix all API routes with /api
 
-# dotenv paths
-MP3_PATH = os.getenv("MP3_DIRECTORY")
-MUSIC_DIR = fr'{MP3_PATH}'  # Directory for storing MP3 files
-EXPORT_DIR = 'app/services/metadata_exports/'  # Directory for storing exported metadata
-
-# Ensure directories exist
-os.makedirs(MUSIC_DIR, exist_ok=True)
-os.makedirs(EXPORT_DIR, exist_ok=True)
+# Create the Flask application instance
+app = create_app()
 
 
 @app.route("/", methods=["GET"])
