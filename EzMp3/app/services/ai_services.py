@@ -1,15 +1,13 @@
-# remove . before each to use the file independently of the app
-from .spotify_services import fetch_spotify_metadata
-from .musicbrainz_services import fetch_musicbrainz_metadata
-from .lastfm_services import fetch_lastfm_tags
-from .deezer_services import fetch_deezer_metadata
-from .discog_services import get_discogs_metadata
+from app.services.spotify_services import fetch_spotify_metadata
+from app.services.musicbrainz_services import fetch_musicbrainz_metadata
+from app.services.lastfm_services import fetch_lastfm_tags
+from app.services.deezer_services import fetch_deezer_metadata
+from app.services.discog_services import get_discogs_metadata
 from dotenv import load_dotenv
 from fuzzywuzzy import fuzz
 from datetime import datetime
 import os
 import json
-
 load_dotenv()
 
 
