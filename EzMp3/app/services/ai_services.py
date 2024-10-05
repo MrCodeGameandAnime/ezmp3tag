@@ -1,14 +1,13 @@
-from spotify_services import fetch_spotify_metadata
-from musicbrainz_services import fetch_musicbrainz_metadata
-from lastfm_services import fetch_lastfm_tags
-from deezer_services import fetch_deezer_metadata
-from discog_services import get_discogs_metadata
+# remove . before each to use the file independently of the app
+from .spotify_services import fetch_spotify_metadata
+from .musicbrainz_services import fetch_musicbrainz_metadata
+from .lastfm_services import fetch_lastfm_tags
+from .deezer_services import fetch_deezer_metadata
+from .discog_services import get_discogs_metadata
 from dotenv import load_dotenv
 from fuzzywuzzy import fuzz
 from datetime import datetime
 import os
-import requests
-import musicbrainzngs
 import json
 
 load_dotenv()
@@ -49,6 +48,7 @@ def parse_year(year_string):
         return year
     except ValueError:
         return None  # Return None if parsing fails
+
 
 def ai_resolve_metadata(mb_metadata, spotify_metadata, deezer_metadata, discogs_metadata, lastfm_tags):
     final_metadata = {}
