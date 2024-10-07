@@ -1,6 +1,7 @@
 package com.example.ezmp3tag
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -23,15 +24,23 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 import okhttp3.MediaType.Companion.toMediaType
 import com.example.ezmp3tag.ui.theme.EzMP3TagTheme
 import org.json.JSONObject
-
+import androidx.core.content.FileProvider
 
 class MainActivity : ComponentActivity() {
 
-    private val client = OkHttpClient()
+    // Configure OkHttpClient with increased timeout
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .build()
+
     private var downloadUrl: String? = null // Store the download URL
+    private var downloadedFilePath: String? = null // Store the path of the downloaded file
 
     // Register a callback for selecting music files
     private val filePickerLauncher = registerForActivityResult(
@@ -39,7 +48,6 @@ class MainActivity : ComponentActivity() {
     ) { uri: Uri? ->
         uri?.let {
             val fileName = getFileName(it)
-            // Upload the file to the server
             uploadFileToApi(it, fileName)
         } ?: Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show()
     }
@@ -56,6 +64,10 @@ class MainActivity : ComponentActivity() {
                         onFileSelectClick = {
                             // Launch file picker
                             filePickerLauncher.launch("audio/*")
+                        },
+                        downloadedFilePath = downloadedFilePath,
+                        onOpenFileClick = {
+                            downloadedFilePath?.let { path -> openFile(path) }
                         }
                     )
                 }
@@ -91,25 +103,33 @@ class MainActivity : ComponentActivity() {
 
             // Update the API URL here
             val request = Request.Builder()
-                .url("http://192.168.1.214:5000/api/upload") // Use your computer's local IP address
+                .url("http://192.168.1.214:5000/api/upload") // Use your server IP address
                 .post(requestBody)
                 .build()
 
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.e("MainActivity", "Upload failed: ${e.message}")
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
                         response.body?.string()?.let { responseBody ->
                             val jsonResponse = JSONObject(responseBody)
-                            downloadUrl = jsonResponse.getString("download_url") // Store the download URL
+                            val relativeDownloadUrl = jsonResponse.getString("download_url")
+                            // Prepend the server base URL
+                            downloadUrl = "http://192.168.1.214:5000$relativeDownloadUrl"
                             Log.i("MainActivity", "Upload successful, ready to download from $downloadUrl")
                             downloadFileFromApi(downloadUrl!!)
                         }
                     } else {
                         Log.e("MainActivity", "Upload failed: ${response.message}")
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Upload failed: ${response.message}", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             })
@@ -127,37 +147,57 @@ class MainActivity : ComponentActivity() {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 Log.e("MainActivity", "Download failed: ${e.message}")
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Download failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
                     response.body?.byteStream()?.let { inputStream ->
-                        saveFileToStorage(inputStream, "downloaded_music.mp3")
+                        downloadedFilePath = saveFileToStorage(inputStream, "downloaded_music.mp3")
                     }
                     Log.i("MainActivity", "Download complete")
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Download complete: $downloadedFilePath", Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Log.e("MainActivity", "Download failed: ${response.message}")
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Download failed: ${response.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         })
     }
 
-    private fun saveFileToStorage(inputStream: InputStream, fileName: String) {
-        // Ensure you have the WRITE_EXTERNAL_STORAGE permission
+    private fun saveFileToStorage(inputStream: InputStream, fileName: String): String {
         if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 1)
+            return "" // Return empty string if permission is not granted
         } else {
             val file = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
             FileOutputStream(file).use { outputStream ->
                 inputStream.copyTo(outputStream)
             }
             Log.i("MainActivity", "File saved to ${file.absolutePath}")
+            return file.absolutePath // Return the file path for later use
         }
+    }
+
+    private fun openFile(filePath: String) {
+        val file = File(filePath)
+        val uri = FileProvider.getUriForFile(this, "${packageName}.provider", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "audio/mpeg")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(intent)
     }
 }
 
 @Composable
-fun UploadAndAnalyzeUI(onFileSelectClick: () -> Unit) {
+fun UploadAndAnalyzeUI(onFileSelectClick: () -> Unit, downloadedFilePath: String?, onOpenFileClick: () -> Unit) {
     var statusMessage by remember { mutableStateOf("Select a music file to upload.") }
 
     Column(
@@ -176,6 +216,16 @@ fun UploadAndAnalyzeUI(onFileSelectClick: () -> Unit) {
         }) {
             Text(text = "Upload Music")
         }
+
+        // Show the open file button if a file has been downloaded
+        downloadedFilePath?.let {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                onOpenFileClick()
+            }) {
+                Text(text = "Open Downloaded Music")
+            }
+        }
     }
 }
 
@@ -183,6 +233,6 @@ fun UploadAndAnalyzeUI(onFileSelectClick: () -> Unit) {
 @Composable
 fun UploadAndAnalyzeUIPreview() {
     EzMP3TagTheme {
-        UploadAndAnalyzeUI(onFileSelectClick = {})
+        UploadAndAnalyzeUI(onFileSelectClick = {}, downloadedFilePath = null, onOpenFileClick = {})
     }
 }

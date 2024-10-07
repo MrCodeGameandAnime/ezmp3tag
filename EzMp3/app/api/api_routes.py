@@ -2,7 +2,6 @@ import logging
 from flask import Blueprint, request, jsonify, send_file
 import os
 from EzMp3.app.services.ai_services import get_music_metadata
-from EzMp3.app.utils.mp3_name import extract_mp3_name
 from EzMp3.app.utils.music_tag_editor import change_mp3_metadata
 import json
 
@@ -79,12 +78,9 @@ def upload_file():
     file.save(file_path)
     logger.info(f"File saved to {file_path}")
 
-    # Extract MP3 name using the extract_mp3_name function
-    song_title = extract_mp3_name(file_path)
+    # Use the filename (without extension) as the song title
+    song_title = os.path.splitext(file.filename)[0]
     logger.info(f"Extracted song title: {song_title}")
-
-    if not song_title:
-        return jsonify({"error": "No MP3 file found to process."}), 400
 
     # Process the metadata
     success, metadata_file = process_metadata(file_path, song_title)
