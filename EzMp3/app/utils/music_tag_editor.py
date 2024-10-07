@@ -1,14 +1,18 @@
 import os
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, ID3NoHeaderError, TIT2, TPE1, TPE2, TALB, TYER, TCON
-from app.utils.mp3_name import extract_mp3_name  # Importing the function to get the MP3 name
+import logging
+from EzMp3.app.utils.mp3_name import extract_mp3_name  # Importing the function to get the MP3 name
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 
 
 def change_mp3_metadata(file_path, new_title, new_contributing_artist, new_album_artist, new_album, new_year,
                         new_genre):
     # Check if the file exists
     if not os.path.isfile(file_path):
-        print(f"File '{file_path}' does not exist.")
+        logging.error(f"File '{file_path}' does not exist.")
         return
 
     try:
@@ -19,45 +23,53 @@ def change_mp3_metadata(file_path, new_title, new_contributing_artist, new_album
         if audio.tags is None:
             audio.add_tags()  # Create tags if they don't exist
 
-        audio.tags.add(TIT2(encoding=3, text=new_title))  # Title
-        audio.tags.add(TPE1(encoding=3, text=new_contributing_artist))  # Contributing Artist
-        audio.tags.add(TPE2(encoding=3, text=new_album_artist))  # Album Artist
-        audio.tags.add(TALB(encoding=3, text=new_album))  # Album
-        audio.tags.add(TYER(encoding=3, text=str(new_year)))  # Year
-        audio.tags.add(TCON(encoding=3, text=new_genre))  # Genre
+        # Update the tags if they already exist or add them if not
+        audio.tags["TIT2"] = TIT2(encoding=3, text=new_title)  # Title
+        audio.tags["TPE1"] = TPE1(encoding=3, text=new_contributing_artist)  # Contributing Artist
+        audio.tags["TPE2"] = TPE2(encoding=3, text=new_album_artist)  # Album Artist
+        audio.tags["TALB"] = TALB(encoding=3, text=new_album)  # Album
+        audio.tags["TYER"] = TYER(encoding=3, text=str(new_year))  # Year
+        audio.tags["TCON"] = TCON(encoding=3, text=new_genre)  # Genre
 
         # Save changes
         audio.save()
-        print(f"Successfully updated '{file_path}' with new metadata.")
+        logging.info(f"Successfully updated '{file_path}' with new metadata.")
 
     except ID3NoHeaderError:
-        print("No ID3 header found. Adding one now.")
+        logging.warning("No ID3 header found. Adding one now.")
         audio.add_tags()
-        audio.tags.add(TIT2(encoding=3, text=new_title))
-        audio.tags.add(TPE1(encoding=3, text=new_contributing_artist))
-        audio.tags.add(TPE2(encoding=3, text=new_album_artist))
-        audio.tags.add(TALB(encoding=3, text=new_album))
-        audio.tags.add(TYER(encoding=3, text=str(new_year)))
-        audio.tags.add(TCON(encoding=3, text=new_genre))
+        audio.tags["TIT2"] = TIT2(encoding=3, text=new_title)
+        audio.tags["TPE1"] = TPE1(encoding=3, text=new_contributing_artist)
+        audio.tags["TPE2"] = TPE2(encoding=3, text=new_album_artist)
+        audio.tags["TALB"] = TALB(encoding=3, text=new_album)
+        audio.tags["TYER"] = TYER(encoding=3, text=str(new_year))
+        audio.tags["TCON"] = TCON(encoding=3, text=new_genre)
         audio.save()
-        print(f"Successfully added ID3 tags to '{file_path}' with new metadata.")
+        logging.info(f"Successfully added ID3 tags to '{file_path}' with new metadata.")
 
     except Exception as e:
-        print(f"An error occurred: {e}")
+        logging.error(f"An error occurred while updating metadata: {e}")
 
 
 if __name__ == "__main__":
     # Get the MP3 file name dynamically
     mp3_name = extract_mp3_name()  # This will return the first MP3 file name in the directory
     if mp3_name:
-        mp3_file_path = os.path.join(os.getenv("MP3_DIR"), f"{mp3_name}.mp3")
+        mp3_dir = os.getenv("MP3_DIR")
 
-        new_title = "New Song Title"
-        new_contributing_artist = "Contributing Artist"
-        new_album_artist = "Album Artist"
-        new_album = "Album Name"
-        new_year = 2024
-        new_genre = "Pop"
+        if mp3_dir:
+            mp3_file_path = os.path.join(mp3_dir, f"{mp3_name}.mp3")
 
-        change_mp3_metadata(mp3_file_path, new_title, new_contributing_artist, new_album_artist, new_album, new_year,
-                            new_genre)
+            new_title = "New Song Title"
+            new_contributing_artist = "Contributing Artist"
+            new_album_artist = "Album Artist"
+            new_album = "Album Name"
+            new_year = 2024
+            new_genre = "Pop"
+
+            change_mp3_metadata(mp3_file_path, new_title, new_contributing_artist, new_album_artist, new_album,
+                                new_year, new_genre)
+        else:
+            logging.error("MP3_DIR environment variable is not set.")
+    else:
+        logging.error("No MP3 file found.")
