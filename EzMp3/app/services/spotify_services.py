@@ -8,6 +8,7 @@ load_dotenv()
 SPOTIFY_CLIENT_ID = os.getenv('SPOTIFY_CLIENT_ID')
 SPOTIFY_CLIENT_SECRET = os.getenv('SPOTIFY_CLIENT_SECRET')
 
+
 def get_spotify_client():
     """Create a Spotify client with proper authentication."""
     if not SPOTIFY_CLIENT_ID or not SPOTIFY_CLIENT_SECRET:
@@ -21,6 +22,7 @@ def get_spotify_client():
     )
     return spotipy.Spotify(client_credentials_manager=client_credentials_manager)
 
+
 def fetch_spotify_metadata(track):
     """Fetch metadata from Spotify using only track name, prioritize original studio album."""
     try:
@@ -33,7 +35,7 @@ def fetch_spotify_metadata(track):
         selected_track = None
         for track_info in result['tracks']['items']:
             album_info = track_info['album']
-            # Filter for non-compilation studio albums and prioritize earliest release
+            # Filter for non-compilation studio albums and prioritize the earliest release
             if album_info['album_type'] == 'album' and "compilation" not in album_info['name'].lower() and "best of" not in album_info['name'].lower():
                 if earliest_album is None or album_info['release_date'] < earliest_album['release_date']:
                     earliest_album = album_info

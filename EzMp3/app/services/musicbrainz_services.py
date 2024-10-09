@@ -13,7 +13,7 @@ def fetch_musicbrainz_metadata(track):
     """Fetch metadata from MusicBrainz using only track name, prioritize original studio album."""
     try:
         result = musicbrainzngs.search_recordings(recording=track, limit=10)  # Fetch up to 10 results
-        #print("Raw MusicBrainz Response:", result)  # Debugging line
+        # print("Raw MusicBrainz Response:", result)  # Debugging line
         earliest_album = None
 
         for recording in result.get('recording-list', []):

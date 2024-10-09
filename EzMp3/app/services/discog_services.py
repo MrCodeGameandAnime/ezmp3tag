@@ -19,6 +19,7 @@ access_token_url = "https://api.discogs.com/oauth/access_token"
 user_agent = "ezmp3/1.0"
 token_file = 'discogs_token.pkl'
 
+
 def get_request_token():
     consumer = oauth.Consumer(consumer_key, consumer_secret)
     client = oauth.Client(consumer)
@@ -28,6 +29,7 @@ def get_request_token():
         sys.exit(f"Invalid response {resp['status']}")
 
     return dict(parse_qsl(content.decode("utf-8")))
+
 
 def authorize_request(request_token):
     print(f"Please visit the following URL to authorize: {authorize_url}?oauth_token={request_token['oauth_token']}")
@@ -40,6 +42,7 @@ def authorize_request(request_token):
     else:
         sys.exit("Authorization not completed.")
 
+
 def get_access_token(request_token, oauth_verifier):
     token = oauth.Token(request_token["oauth_token"], request_token["oauth_token_secret"])
     token.set_verifier(oauth_verifier)
@@ -51,6 +54,7 @@ def get_access_token(request_token, oauth_verifier):
 
     return dict(parse_qsl(content.decode("utf-8")))
 
+
 def load_access_token():
     """Load access token from a file if it exists."""
     if os.path.exists(token_file):
@@ -58,10 +62,12 @@ def load_access_token():
             return pickle.load(f)
     return None
 
+
 def save_access_token(access_token):
     """Save access token to a file."""
     with open(token_file, 'wb') as f:
         pickle.dump(access_token, f)
+
 
 def search_discogs(access_token, song_name):
     token = oauth.Token(key=access_token["oauth_token"], secret=access_token["oauth_token_secret"])
@@ -91,6 +97,7 @@ def search_discogs(access_token, song_name):
 
     return filtered_results
 
+
 def print_discogs_results(results):
     print("\n== Discogs Search Results ==")
     for release in results:
@@ -100,6 +107,7 @@ def print_discogs_results(results):
         print(f'\tAlbum Artist\t: {", ".join(release["album_artist"])}')
         print(f'\tYear\t\t: {release["year"]}')
         print(f'\tGenre\t\t: {", ".join(release["genre"])}')
+
 
 def get_discogs_metadata(song_name):
     """Get Discogs metadata for a song."""
@@ -113,6 +121,7 @@ def get_discogs_metadata(song_name):
         save_access_token(access_token)  # Save the new access token
 
     return search_discogs(access_token, song_name)
+
 
 if __name__ == "__main__":
     song_name = "Your Song Name Here"  # Replace with an actual song name for testing
