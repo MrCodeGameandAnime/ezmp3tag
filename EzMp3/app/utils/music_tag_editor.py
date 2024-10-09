@@ -2,7 +2,7 @@ import os
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3, ID3NoHeaderError, TIT2, TPE1, TPE2, TALB, TYER, TCON
 import logging
-from EzMp3.app.utils.mp3_name import extract_mp3_name  # Importing the function to get the MP3 name
+from app.utils.mp3_name import extract_mp3_name  # Importing the function to get the MP3 name
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

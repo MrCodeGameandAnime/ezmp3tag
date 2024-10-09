@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">EzMP3Tag</string>
+    <string name="title_activity_download">DownloadActivity</string>
 </resources>

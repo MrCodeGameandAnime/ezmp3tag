@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env file
 
+
 def create_app():
     app = Flask(__name__)
 
@@ -15,7 +16,7 @@ def create_app():
     initialize_directories(app.config['MP3_DIRECTORY'], app.config['EXPORT_DIRECTORY'])
 
     # Import and register the API blueprint
-    from EzMp3.app.api.api_routes import api
+    from app.api.api_routes import api
     app.register_blueprint(api, url_prefix='/api')  # Prefix all API routes with /api
 
     # Import and register other blueprints if you have any
@@ -23,6 +24,7 @@ def create_app():
     # app.register_blueprint(some_blueprint)
 
     return app
+
 
 def initialize_directories(music_dir, export_dir):
     """Ensure the necessary directories exist."""

@@ -1,5 +1,149 @@
 package com.example.ezmp3tag
 
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.provider.OpenableColumns
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.ezmp3tag.ui.theme.EzMP3TagTheme
+import okhttp3.*
+import java.io.InputStream
+import java.util.concurrent.TimeUnit
+import okhttp3.MediaType.Companion.toMediaType
+import org.json.JSONObject
+import java.io.IOException
+
+class MainActivity : ComponentActivity() {
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .build()
+
+    // Register file picker callback
+    private val filePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val fileName = getFileName(it)
+            uploadFileToApi(it, fileName)
+        } ?: Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            EzMP3TagTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    UploadUI(onFileSelectClick = {
+                        filePickerLauncher.launch("audio/*")
+                    })
+                }
+            }
+        }
+    }
+
+    private fun getFileName(uri: Uri): String {
+        var fileName = "unknown"
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                fileName = it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+            }
+        }
+        return fileName
+    }
+
+    private fun uploadFileToApi(fileUri: Uri, fileName: String) {
+        try {
+            val inputStream: InputStream? = contentResolver.openInputStream(fileUri)
+            val fileData = inputStream?.readBytes()
+            val mediaType = "audio/mpeg".toMediaType()
+            val requestBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", fileName, RequestBody.create(mediaType, fileData!!))
+                .build()
+
+            val request = Request.Builder()
+                .url("http://192.168.1.214:5000/api/upload")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.isSuccessful) {
+                        response.body?.string()?.let { responseBody ->
+                            val jsonResponse = JSONObject(responseBody)
+                            val downloadUrl = jsonResponse.getString("download_url")
+
+                            // Navigate to SuccessActivity
+                            val intent = Intent(this@MainActivity, SuccessActivity::class.java)
+                            intent.putExtra("download_url", "http://192.168.1.214:5000$downloadUrl")
+                            startActivity(intent)
+                        }
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "Upload failed: ${response.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            })
+        } catch (e: IOException) {
+            Toast.makeText(this, "Failed to read file", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+@Composable
+fun UploadUI(onFileSelectClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Button(onClick = onFileSelectClick) {
+            Text(text = "Upload Music")
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun UploadUIPreview() {
+    EzMP3TagTheme {
+        UploadUI(onFileSelectClick = {})
+    }
+}
+
+
+
+
+// pre modularization
+/*
+package com.example.ezmp3tag
+
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -234,5 +378,8 @@ fun UploadAndAnalyzeUI(onFileSelectClick: () -> Unit, downloadedFilePath: String
 fun UploadAndAnalyzeUIPreview() {
     EzMP3TagTheme {
         UploadAndAnalyzeUI(onFileSelectClick = {}, downloadedFilePath = null, onOpenFileClick = {})
+
     }
-}
+   }
+
+ */

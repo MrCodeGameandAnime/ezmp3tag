@@ -1,8 +1,8 @@
 import logging
 from flask import Blueprint, request, jsonify, send_file
 import os
-from EzMp3.app.services.ai_services import get_music_metadata
-from EzMp3.app.utils.music_tag_editor import change_mp3_metadata
+from app.services.ai_services import get_music_metadata
+from app.utils.music_tag_editor import change_mp3_metadata
 import json
 
 # Configure logging
