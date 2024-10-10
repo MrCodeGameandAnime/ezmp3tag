@@ -1,18 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <!-- Required permissions for accessing media files -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
-    <uses-permission
-        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
-        tools:targetApi="30" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:targetApi="30" />
 
     <application
         android:allowBackup="true"
@@ -25,14 +21,7 @@
         android:theme="@style/Theme.EzMP3Tag"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
-        <activity
-            android:name=".ui.theme.DownloadActivity"
-            android:exported="false"
-            android:label="@string/title_activity_download"
-            android:theme="@style/Theme.EzMP3Tag" />
-        <activity
-            android:name=".SuccessActivity"
-            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -40,10 +29,21 @@
             android:theme="@style/Theme.EzMP3Tag">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity> <!-- FileProvider configuration -->
+        </activity>
+
+        <activity
+            android:name=".SuccessActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".DownloadActivity"
+            android:exported="false"
+            android:label="@string/title_activity_download"
+            android:theme="@style/Theme.EzMP3Tag" />
+
+        <!-- FileProvider configuration -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
@@ -54,5 +54,4 @@
                 android:resource="@xml/file_paths" />
         </provider>
     </application>
-
 </manifest>

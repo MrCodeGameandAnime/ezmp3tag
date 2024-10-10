@@ -16,6 +16,118 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.ezmp3tag.ui.theme.EzMP3TagTheme
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
+
+class MainActivity : ComponentActivity() {
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
+        .build()
+
+    // Register file picker callback
+    private val filePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            val fileName = getFileName(it)
+            uploadFileToApi(it, fileName)
+        } ?: runOnUiThread {
+            Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            EzMP3TagTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    UploadUI(onFileSelectClick = {
+                        filePickerLauncher.launch("audio/*")
+                    })
+                }
+            }
+        }
+    }
+
+    private fun getFileName(uri: Uri): String {
+        var fileName = "unknown"
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                fileName = it.getString(it.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
+            }
+        }
+        return fileName
+    }
+
+    private fun uploadFileToApi(fileUri: Uri, fileName: String) {
+        val networkService = NetworkService(this, client)
+
+        networkService.uploadFile(fileUri, fileName, { downloadUrl ->
+            runOnUiThread {
+                // Navigate to SuccessActivity
+                val intent = Intent(this, SuccessActivity::class.java)
+                intent.putExtra("download_url", downloadUrl)
+                startActivity(intent)
+            }
+        }, { errorMessage ->
+            runOnUiThread {
+                Toast.makeText(this, "Upload failed: $errorMessage", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+}
+
+@Composable
+fun UploadUI(onFileSelectClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Button(onClick = onFileSelectClick) {
+            Text(text = "Upload Music")
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun UploadUIPreview() {
+    EzMP3TagTheme {
+        UploadUI(onFileSelectClick = {})
+    }
+}
+
+
+
+// further separation
+/*package com.example.ezmp3tag
+
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.provider.OpenableColumns
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.example.ezmp3tag.ui.theme.EzMP3TagTheme
 import okhttp3.*
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
@@ -135,7 +247,7 @@ fun UploadUIPreview() {
     EzMP3TagTheme {
         UploadUI(onFileSelectClick = {})
     }
-}
+}*/
 
 
 

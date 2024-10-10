@@ -1,0 +1,58 @@
+{
+    "spotify_metadata": {
+        "title": "Bohemian Rhapsody - Remastered 2011",
+        "artist": "Queen",
+        "contributing_artists": [
+            "Queen"
+        ],
+        "album": "A Night At The Opera (Deluxe Remastered Version)",
+        "album_artist": "Queen",
+        "year": "1975",
+        "popularity": 70,
+        "genres": [
+            "classic rock",
+            "glam rock",
+            "rock"
+        ]
+    },
+    "musicbrainz_metadata": {
+        "title": "Bohemian Rhapsody",
+        "artist": "The Muppets",
+        "album": "Rocks the West",
+        "album_artist": "California Guitar Trio",
+        "year": "2000"
+    },
+    "deezer_metadata": {
+        "title": "Bohemian Rhapsody (Acoustic)",
+        "contributing_artists": [
+            "Lukas Brodie"
+        ],
+        "album_artist": "Lukas Brodie",
+        "album": "Bohemian Rhapsody (Acoustic)",
+        "year": "1975",
+        "genres": [
+            "Rock",
+            "Singer & Songwriter"
+        ]
+    },
+    "discogs_metadata": [],
+    "lastfm_tags": [
+        "classic rock",
+        "rock",
+        "Queen",
+        "70s",
+        "80s"
+    ],
+    "resolved_metadata": {
+        "title": "Bohemian Rhapsody",
+        "contributing_artists": "Queen",
+        "album_artist": "Queen",
+        "album": "A Night At The Opera",
+        "year": "1975",
+        "genres": [
+            "classic rock",
+            "glam rock",
+            "rock"
+        ]
+    }
+}
