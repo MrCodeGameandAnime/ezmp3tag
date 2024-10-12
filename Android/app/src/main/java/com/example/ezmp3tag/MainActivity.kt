@@ -7,57 +7,69 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.ezmp3tag.ui.theme.EzMP3TagTheme
-import okhttp3.OkHttpClient
-import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
-    // Create an OkHttpClient instance with timeouts
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
-
-    // Register the file picker callback
     private val filePickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             val fileName = getFileName(it)
+            Log.d("MainActivity", "File selected: $fileName")
             uploadFileToApi(it, fileName)
-        } ?: Toast.makeText(this, "No file selected", Toast.LENGTH_SHORT).show()
+        } ?: Log.d("MainActivity", "No file selected")
+    }
+
+    private val requestPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        permissions.entries.forEach { (permission, isGranted) ->
+            if (isGranted) {
+                Log.d("MainActivity", "$permission granted")
+            } else {
+                Log.e("MainActivity", "$permission denied")
+                Toast.makeText(this, "Permission denied: $permission", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestPermissions() // Request permissions at startup
+        Log.d("MainActivity", "Activity created")
+        requestPermissions()
         setContent {
             EzMP3TagTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.background
                 ) {
                     UploadUI(onFileSelectClick = {
-                        filePickerLauncher.launch("audio/*")
+                        if (arePermissionsGranted()) {
+                            Log.d("MainActivity", "Permissions granted, launching file picker")
+                            filePickerLauncher.launch("audio/*")
+                        } else {
+                            Log.d("MainActivity", "Permissions not granted")
+                        }
                     })
                 }
             }
         }
     }
 
-    // Function to retrieve the file name from the URI
     private fun getFileName(uri: Uri): String {
         var fileName = "unknown"
         val cursor = contentResolver.query(uri, null, null, null, null)
@@ -69,63 +81,56 @@ class MainActivity : ComponentActivity() {
         return fileName
     }
 
-    // Function to handle the file upload process
     private fun uploadFileToApi(fileUri: Uri, fileName: String) {
-        val networkService = NetworkService(this, client)
-
+        Log.d("MainActivity", "Starting upload for file: $fileName")
+        val networkService = NetworkService(this)
         networkService.uploadFile(fileUri, fileName, { downloadUrl ->
-            // Navigate to SuccessActivity on successful upload
+            Log.d("MainActivity", "Upload complete, received download URL: $downloadUrl")
             val intent = Intent(this, SuccessActivity::class.java)
             intent.putExtra("download_url", downloadUrl)
             startActivity(intent)
         }, { errorMessage ->
+            Log.e("MainActivity", "Upload failed: $errorMessage")
             Toast.makeText(this, "Upload failed: $errorMessage", Toast.LENGTH_SHORT).show()
         })
     }
 
-    // Request permissions at runtime
     private fun requestPermissions() {
-        // Request READ_EXTERNAL_STORAGE and WRITE_EXTERNAL_STORAGE if below Android 10
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_CODE_WRITE_EXTERNAL_STORAGE)
+        val permissions = mutableListOf<String>()
+
+        if (!arePermissionsGranted()) {
+            // Request new Android 13+ media permission for audio
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                permissions.add(Manifest.permission.READ_MEDIA_AUDIO)
+            } else {
+                permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                    permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                }
             }
-            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), REQUEST_CODE_READ_EXTERNAL_STORAGE)
-            }
+            requestPermissionsLauncher.launch(permissions.toTypedArray())
         }
     }
 
-    // Change permissions parameter type to Array<String>
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            REQUEST_CODE_WRITE_EXTERNAL_STORAGE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission granted
-                } else {
-                    // Permission denied
-                    Toast.makeText(this, "Storage permission is required to save files.", Toast.LENGTH_SHORT).show()
-                }
-            }
-            REQUEST_CODE_READ_EXTERNAL_STORAGE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission granted
-                } else {
-                    // Permission denied
-                    Toast.makeText(this, "Read permission is required to access files.", Toast.LENGTH_SHORT).show()
-                }
-            }
+
+    private fun arePermissionsGranted(): Boolean {
+        val readPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            checkSelfPermission(Manifest.permission.READ_MEDIA_AUDIO) == PackageManager.PERMISSION_GRANTED
+        } else {
+            checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
         }
+
+        val writePermission = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // No need for WRITE_EXTERNAL_STORAGE on Android Q and above
+        }
+
+        return readPermission && writePermission
     }
 
-    companion object {
-        private const val REQUEST_CODE_WRITE_EXTERNAL_STORAGE = 1
-        private const val REQUEST_CODE_READ_EXTERNAL_STORAGE = 2
-    }
 }
 
-// Composable function for the upload UI
 @Composable
 fun UploadUI(onFileSelectClick: () -> Unit) {
     Column(

@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.ezmp3tag.ui.theme.EzMP3TagTheme
-import okhttp3.OkHttpClient
 
 class DownloadActivity : ComponentActivity() {
 
@@ -38,7 +37,7 @@ class DownloadActivity : ComponentActivity() {
     }
 
     private fun downloadFileFromApi(downloadUrl: String) {
-        val networkService = NetworkService(this, OkHttpClient())
+        val networkService = NetworkService(this)
 
         // Extract the actual filename from the URL
         val fileName = downloadUrl.substring(downloadUrl.lastIndexOf('/') + 1)
@@ -53,6 +52,7 @@ class DownloadActivity : ComponentActivity() {
             // Show error message on the UI thread
             runOnUiThread {
                 Toast.makeText(this, "Download failed: $errorMessage", Toast.LENGTH_SHORT).show()
+                Log.e("DownloadActivity", "Download error: $errorMessage")
             }
         })
     }
