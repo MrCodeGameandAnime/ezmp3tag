@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 import java.io.InputStream
@@ -19,14 +20,15 @@ class NetworkService(private val context: Context) {
         .build()
 
     fun uploadFile(fileUri: Uri, fileName: String, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+        var inputStream: InputStream? = null
         try {
-            val inputStream: InputStream = context.contentResolver.openInputStream(fileUri)
+            inputStream = context.contentResolver.openInputStream(fileUri)
                 ?: throw IOException("Failed to open input stream.")
 
-            val mediaType = "audio/mpeg".toMediaType()
+            val mediaType = context.contentResolver.getType(fileUri)?.toMediaType() ?: "audio/mpeg".toMediaType()
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", fileName, RequestBody.create(mediaType, inputStream.readBytes()))
+                .addFormDataPart("file", fileName, inputStream.readBytes().toRequestBody(mediaType))
                 .build()
 
             val request = Request.Builder()
@@ -43,10 +45,20 @@ class NetworkService(private val context: Context) {
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
                         response.body?.string()?.let {
-                            val jsonResponse = JSONObject(it)
-                            val downloadUrl = jsonResponse.getString("download_url")
-                            Log.d("NetworkService", "Upload successful, download URL: $downloadUrl")
-                            onSuccess(downloadUrl)
+                            try {
+                                val jsonResponse = JSONObject(it)
+                                val downloadUrl = jsonResponse.optString("download_url", "")
+                                if (downloadUrl.isNotEmpty()) {
+                                    Log.d("NetworkService", "Upload successful, download URL: $downloadUrl")
+                                    onSuccess(downloadUrl)
+                                } else {
+                                    Log.e("NetworkService", "Download URL not found in response.")
+                                    onError("Download URL not found in response.")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("NetworkService", "JSON parsing error: ${e.message}")
+                                onError("JSON parsing error: ${e.message}")
+                            }
                         }
                     } else {
                         Log.e("NetworkService", "Upload failed with code: ${response.code}")
@@ -57,6 +69,8 @@ class NetworkService(private val context: Context) {
         } catch (e: IOException) {
             Log.e("NetworkService", "File read failed: ${e.message}")
             onError("File read failed: ${e.message}")
+        } finally {
+            inputStream?.close() // Ensure stream is closed to avoid memory leaks
         }
     }
 
@@ -67,16 +81,14 @@ class NetworkService(private val context: Context) {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                // Log error message to Logcat
                 Log.e("NetworkService", "Download failed: ${e.message}")
                 onError("Download failed: ${e.message}")
             }
 
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
-                    response.body?.byteStream()?.let { inputStream ->
+                    response.body?.byteStream()?.use { inputStream ->
                         try {
-                            // Save the file with the provided fileName in the public Downloads directory
                             val filePath = FileUtils.saveFileToStorage(context, inputStream, fileName)
                             Log.d("NetworkService", "Download successful, file path: $filePath")
                             onSuccess(filePath)
