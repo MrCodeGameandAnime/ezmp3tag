@@ -5,7 +5,6 @@ import android.net.Uri
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import org.json.JSONObject
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 
@@ -13,20 +12,24 @@ class NetworkService(private val context: Context, private val client: OkHttpCli
 
     fun uploadFile(fileUri: Uri, fileName: String, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
         try {
-            val inputStream: InputStream? = context.contentResolver.openInputStream(fileUri)
-            val fileData = inputStream?.readBytes() ?: throw IOException("File input stream is null")
-            val mediaType = "audio/mpeg".toMediaType()
+            // Use ContentResolver to get the input stream
+            val inputStream: InputStream = context.contentResolver.openInputStream(fileUri)
+                ?: throw IOException("Failed to open input stream.")
 
+            // Create a request body with the file data
+            val mediaType = "audio/mpeg".toMediaType()
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", fileName, RequestBody.create(mediaType, fileData))
+                .addFormDataPart("file", fileName, RequestBody.create(mediaType, inputStream.readBytes()))
                 .build()
 
+            // Create a request
             val request = Request.Builder()
                 .url("http://192.168.1.214:5000/api/upload")
                 .post(requestBody)
                 .build()
 
+            // Execute the request
             client.newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     onError("Upload failed: ${e.message}")
@@ -49,7 +52,8 @@ class NetworkService(private val context: Context, private val client: OkHttpCli
         }
     }
 
-    fun downloadFile(downloadUrl: String, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+
+    fun downloadFile(downloadUrl: String, fileName: String, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
         val request = Request.Builder()
             .url(downloadUrl)
             .build()
@@ -62,8 +66,13 @@ class NetworkService(private val context: Context, private val client: OkHttpCli
             override fun onResponse(call: Call, response: Response) {
                 if (response.isSuccessful) {
                     response.body?.byteStream()?.let { inputStream ->
-                        val filePath = FileUtils.saveFileToStorage(context, inputStream, "downloaded_music.mp3")
-                        onSuccess(filePath)
+                        // Save the file with the provided fileName using FileUtils
+                        try {
+                            val filePath = FileUtils.saveFileToStorage(context, inputStream, fileName)
+                            onSuccess(filePath)
+                        } catch (e: IOException) {
+                            onError("Error saving file: ${e.message}")
+                        }
                     } ?: onError("Failed to get input stream")
                 } else {
                     onError("Download failed: ${response.message}")

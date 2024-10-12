@@ -1,8 +1,8 @@
 import logging
 from flask import Blueprint, request, jsonify, send_file
 import os
-from app.services.ai_services import get_music_metadata
-from app.utils.music_tag_editor import change_mp3_metadata
+from EzMp3.app.services.ai_services import get_music_metadata
+from EzMp3.app.utils.music_tag_editor import change_mp3_metadata
 import json
 
 # Configure logging
@@ -85,6 +85,7 @@ def upload_file():
     # Process the metadata
     success, metadata_file = process_metadata(file_path, song_title)
     if success:
+        # Respond with the download URL and the actual file name
         return jsonify({
             "message": f"Metadata processed for '{song_title}'.",
             "download_url": f"/api/download/{os.path.basename(file_path)}"
@@ -99,7 +100,8 @@ def download_file(filename):
     file_path = os.path.join(MUSIC_DIR, filename)
     if os.path.exists(file_path):
         logger.info(f"File {filename} found for download.")
-        return send_file(file_path, as_attachment=True)
+        return send_file(file_path, as_attachment=True, download_name=filename)
+
     else:
         logger.error(f"File {filename} not found.")
         return jsonify({"error": "File not found"}), 404

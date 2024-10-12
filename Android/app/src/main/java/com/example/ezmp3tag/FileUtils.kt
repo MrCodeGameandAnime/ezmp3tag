@@ -10,12 +10,27 @@ import java.io.InputStream
 object FileUtils {
 
     fun saveFileToStorage(context: Context, inputStream: InputStream, fileName: String): String {
-        val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-            ?: throw IOException("Unable to access external storage directory")
-        val file = File(downloadsDir, fileName)
-        FileOutputStream(file).use { outputStream ->
-            inputStream.copyTo(outputStream)
+        // Use the public Downloads directory
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
+        // Create the Downloads directory if it doesn't exist
+        if (!downloadsDir.exists() && !downloadsDir.mkdirs()) {
+            throw IOException("Unable to create Downloads directory")
         }
+
+        // Create the file in the Downloads directory
+        val file = File(downloadsDir, fileName)
+
+        // Use FileOutputStream to write the input stream to the file
+        try {
+            FileOutputStream(file).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        } catch (e: IOException) {
+            throw IOException("Error saving file: ${e.message}")
+        }
+
+        // Return the absolute path of the saved file
         return file.absolutePath
     }
 }
