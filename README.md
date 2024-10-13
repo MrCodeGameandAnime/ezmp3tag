@@ -1,128 +1,106 @@
-EzMP3Tag
-========
+# EzMP3Tag
 
-EzMP3Tag is Python based AI API with an Android application that allows users to upload MP3 files to a Flask server, analyze and modify their metadata, and download the updated file. The app uses `OkHttp` to communicate with a Flask-based backend and supports secure file sharing using Android's `FileProvider`.
+EzMP3Tag is an Android application that uploads and downloads MP3 files from a backend server. The app allows users to send audio files for processing and retrieve them once they are ready. The project uses OkHttp for network requests and includes file management for saving audio files to the device.
 
-Features
---------
+## Features
+- Upload MP3 files to a server.
+- Download processed files from the server.
+- Handles timeouts and errors.
+- Log activities for easier debugging.
+- Supports devices running Android 13 (API Level 33) or higher.
 
--   **Upload MP3 Files:** Select and upload MP3 files from your Android device to a server for processing.
--   **Analyze Metadata:** The server analyzes and updates metadata, returning a downloadable file.
--   **File Download & Share:** Download the processed file to your device and open it with external apps.
--   **Timeout Handling:** The app manages network timeouts with `OkHttp` for reliable uploads/downloads.
--   **Secure File Sharing:** Uses `FileProvider` for securely sharing files between apps on the device.
+## Prerequisites
 
-Tech Stack
-----------
+To use or develop EzMP3Tag, you'll need the following:
+- Android Studio.
+- A server will handle the upload and download requests. The base URL for the server is configurable in the code.
 
--   **Frontend:**
+## Installation
 
-    -   Android (Kotlin)
-    -   Jetpack Compose for UI
-    -   OkHttp for networking
-    -   FileProvider for secure file sharing
--   **Backend:**
-
-    -   Flask (Python)
-
-Requirements
-------------
-
--   Android Studio with Android SDK
--   A Flask server to handle file uploads and provide metadata services
--   Android 10 or higher
-
-Getting Started
----------------
-
-### Prerequisites
-
-Before running the app, ensure you have the following installed:
-
--   [Android Studio](https://developer.android.com/studio) for Android development
--   A running Flask server on your local network or hosted remotely, configured to accept MP3 file uploads and return modified files
-
-### Setup Instructions
-
-1.  **Clone the Repository**
+### 1. Clone the Repository
 ```
-    git clone https://github.com/your-username/ezmp3tag.git
-    cd ezmp3tag
-```
-2.  **Configure the Flask Server URL**
-
-    In `MainActivity.kt`, update the `uploadFileToApi()` method to point to your Flask server's IP address and port.
-
-
-```
-    val request = Request.Builder()
-        .url("http://your-server-ip:5000/api/upload")
-        .post(requestBody)
-        .build()
+git clone https://github.com/your-username/ezmp3tag.git
+cd ezmp3tag
 ```
 
-3.  **Set Up Permissions in `AndroidManifest.xml`**
+### 2. Open the Project in Android Studio
 
-    Ensure the necessary permissions are included in the `AndroidManifest.xml` file for internet access, file storage, and external file sharing.
+-   Open Android Studio and select **File > Open...**.
+-   Navigate to the `EzMP3Tag` directory and open it.
 
-4.  **File Provider Configuration**
+### 3. Update the Base URL
 
-    Make sure the `FileProvider` is correctly configured in the `AndroidManifest.xml` and a `file_paths.xml` file is added in the `res/xml` folder.
-
-
-    <provider
-        android:name="androidx.core.content.FileProvider"
-        android:authorities="${applicationId}.provider"
-        android:exported="false"
-        android:grantUriPermissions="true">
-        <meta-data
-            android:name="android.support.FILE_PROVIDER_PATHS"
-            android:resource="@xml/file_paths" />
-    </provider>
-
-
-Create the `file_paths.xml` file under `res/xml`:
+In the `NetworkService.kt` file, set the `baseUrl` to the appropriate server URL for file uploads and downloads. The default is set to `http://192.168.1.214:5000`, but you may need to change it based on your setup.
 
 
 
-    <?xml version="1.0" encoding="utf-8"?>
-    <paths xmlns:android="http://schemas.android.com/apk/res/android">
-        <external-files-path name="downloaded_files" path="." />
-    </paths>
+`private val baseUrl = "http://your-server-ip:5000" // Replace with your server URL`
 
+### 4\. Build and Run the Project
 
-5.  **Run the App**
-
-    -   Open the project in Android Studio.
-    -   Connect your Android device or use an emulator.
-    -   Click "Run" to build and install the app on your device.
+-   Connect an Android device or start an emulator.
+-   Click the **Run** button in Android Studio to build and install the app on your device.
 
 Usage
 -----
 
-1.  **Uploading an MP3 File:**
+### Uploading Files
 
-    -   Open the app and tap on "Upload Music."
-    -   Select an MP3 file from your device.
-    -   The file will be uploaded to the server for processing.
-2.  **Downloading and Sharing:**
+1.  Select an MP3 file to upload.
+2.  The app will send the file to the backend server at `{BASE_URL}/api/upload`.
+3.  A toast/log message will notify the user of success or failure.
 
-    -   Once the file is processed, the app will notify you that the download is complete.
-    -   You can then open the file using any external app capable of playing MP3 files.
+### Downloading Files
 
-Screenshots
------------
+1.  Once the server processes the file, the download URL is returned.
+2.  The app will attempt to download the processed file and save it in the device's Downloads folder.
+3.  Logs will indicate the status of the download.
 
-| Upload Screen | Success Screen | Download Screen |
-| --- | --- | --- |
-| ![Upload Screen](path) | ![Success Screen](path) | ![Download Screen](path) |
+Project Structure
+-----------------
 
-Contributing
+-   **NetworkService.kt**: Handles network operations like file uploads and downloads.
+-   **FileUtils.kt**: Utility class for saving files to storage.
+-   **MainActivity.kt**: The main entry point of the app, handling user interaction.
+-   **SuccessActivity.kt**: Displays success messages or handles after-upload actions.
+-   **DownloadActivity.kt**: Handles downloading and saving files.
+
+Requirements
 ------------
 
-Contributions are welcome! Please feel free to submit a Pull Request or open an Issue.
+-   Minimum Android SDK: 33 (Android 13)
+-   OkHttp for network requests
+-   File I/O for saving and retrieving files
 
 License
 -------
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+EzMP3Tag is licensed under the MIT License. See `LICENSE` for more information.
+
+Contributing
+------------
+
+If you'd like to contribute, feel free to fork the repository and submit a pull request. Contributions are welcome!
+
+1.  Fork the repository
+2.  Create a new branch (`git checkout -b feature-branch`)
+3.  Make your changes
+4.  Push to the branch (`git push origin feature-branch`)
+5.  Submit a pull request
+
+Contact
+-------
+
+For questions or support, please get in touch with the maintainer:
+
+-   Email: mrcodegameandanime@gmail.com
+-   GitHub: [MrCodeGameAndAnime](https://github.com/MrCodeGameandAnime)
+
+
+
+ ### Key Points Covered:
+- **Features**: Overview of what the app does.
+- **Installation**: Step-by-step guide to get the app running.
+- **Usage**: How to upload and download files using the app.
+- **Project Structure**: Describes the key components of the app.
+- **License** and **Contributing** sections.

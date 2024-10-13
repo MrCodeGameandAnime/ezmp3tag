@@ -13,6 +13,9 @@ import java.util.concurrent.TimeUnit
 
 class NetworkService(private val context: Context) {
 
+    // Directly specify the base URL here
+    private val baseUrl = "http://192.168.1.214:5000"
+
     private val client = OkHttpClient.Builder()
         .connectTimeout(120, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
@@ -32,7 +35,7 @@ class NetworkService(private val context: Context) {
                 .build()
 
             val request = Request.Builder()
-                .url("http://192.168.1.214:5000/api/upload")
+                .url("$baseUrl/api/upload") // Use baseUrl directly
                 .post(requestBody)
                 .build()
 
@@ -47,8 +50,10 @@ class NetworkService(private val context: Context) {
                         response.body?.string()?.let {
                             try {
                                 val jsonResponse = JSONObject(it)
-                                val downloadUrl = jsonResponse.optString("download_url", "")
-                                if (downloadUrl.isNotEmpty()) {
+                                val relativeDownloadUrl = jsonResponse.optString("download_url", "")
+                                if (relativeDownloadUrl.isNotEmpty()) {
+                                    // Construct the absolute download URL using baseUrl
+                                    val downloadUrl = "$baseUrl$relativeDownloadUrl"
                                     Log.d("NetworkService", "Upload successful, download URL: $downloadUrl")
                                     onSuccess(downloadUrl)
                                 } else {
