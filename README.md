@@ -2,6 +2,12 @@
 
 EzMP3Tag is an Android application that uploads and downloads MP3 files from a backend server. The app allows users to send audio files for processing and retrieve them once they are ready. The project uses OkHttp for network requests and includes file management for saving audio files to the device.
 
+
+
+https://github.com/user-attachments/assets/3d3dcd7f-0be6-4c74-8100-b23111bd56f6
+
+
+
 ## Features
 - Upload MP3 files to a server.
 - Download processed files from the server.
