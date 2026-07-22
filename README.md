@@ -12,7 +12,7 @@ https://github.com/user-attachments/assets/3d3dcd7f-0be6-4c74-8100-b23111bd56f6
 - Upload MP3 files to a server.
 - Download processed files from the server.
 - Handles timeouts and errors.
-- Log activities for easier debugging.
+- Logs activities for easier debugging.
 - Supports devices running Android 13 (API Level 33) or higher.
 
 ## Prerequisites
